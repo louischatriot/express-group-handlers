@@ -1,3 +1,6 @@
+var supportedHttpMethods = require('methods');   // Same module Express uses
+
+
 /**
  * Flatten the given `arr`
  * Taken from Express

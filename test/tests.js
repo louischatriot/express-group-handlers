@@ -62,15 +62,19 @@ describe('beforeEach', function () {
 		var app = express();
 
 		app.get('/route1', normalHandler);
-		app.get('/route2', normalHandler);
-		app.get('/route3', normalHandler);
+
+		beforeEach(app, toApply, function (app) {
+			app.get('/route2', normalHandler);
+			app.get('/route3', normalHandler);
+		});
+
 		app.get('/route4', normalHandler);
 
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', false)
-	  , async.apply(testRoute, '/route2', false)
-	  , async.apply(testRoute, '/route3', false)
+	  , async.apply(testRoute, '/route2', true)
+	  , async.apply(testRoute, '/route3', true)
 	  , async.apply(testRoute, '/route4', false)
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
