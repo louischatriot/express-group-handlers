@@ -22,6 +22,7 @@
   , "mocha": "1.4.x"
   , "sinon": "1.3.x"
   , "async": "~0.2.5"
+  , "underscore": "1.4.x"
   },
   "scripts": {
     "test": "make test"

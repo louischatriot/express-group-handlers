@@ -4,29 +4,11 @@ var should = require('chai').should()
 	, async = require('async')
 	, express = require('express')
 	, request = require('request')
+	, _ = require('underscore')
 	, groupHandlers = require('../index')
 	, beforeEach = groupHandlers.beforeEach
 	, testPort = 3000   // Change this if you already have something running on this port and absolutely want to test this module
   ;
-
-// Will send { applied: false } unless middleware toApply has been called before
-function normalHandler (req, res, next) {
-	return res.json(200, { applied: req.applied ? true: false });
-}
-
-function toApply (req, res, next) {
-	req.applied = true;
-	return next();
-}
-
-// Test a route to see if toApply has been applied or not
-function testRoute (route, shouldBeApplied, cb) {
-	request.get({ uri: 'http://localhost:' + testPort + route }, function (err, res, body) {
-		var obj = JSON.parse(body);
-		obj.applied.should.equal(shouldBeApplied);
-		cb();
-	});
-}
 
 // Launch an Express server in a way that lets us close it cleanly
 function launchServer (port, cb) {
@@ -56,6 +38,28 @@ function stopServer (cb) {
 }
 
 
+// Will send { applied: false } unless middleware toApply has been called before
+function normalHandler (req, res, next) {
+	var applied = req.applied || {};
+	applied.normalHandler = true;
+	return res.json(200, applied);
+}
+
+function toApply (req, res, next) {
+	req.applied = req.applied || {};
+	req.applied.caca = true;
+	return next();
+}
+
+// Test a route to see if toApply has been applied or not
+function testRoute (route, targetApplied, cb) {
+	request.get({ uri: 'http://localhost:' + testPort + route }, function (err, res, body) {
+		var obj = JSON.parse(body);
+		_.isEqual(obj, targetApplied).should.equal(true);
+		cb();
+	});
+}
+
 describe('beforeEach', function () {
 
 	it('Applies a middleware to a group of routes', function (done) {
@@ -63,6 +67,7 @@ describe('beforeEach', function () {
 
 		app.get('/route1', normalHandler);
 
+		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		beforeEach(app, toApply, function (app) {
 			app.get('/route2', normalHandler);
 			app.get('/route3', normalHandler);
@@ -72,10 +77,10 @@ describe('beforeEach', function () {
 
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
-	  , async.apply(testRoute, '/route1', false)
-	  , async.apply(testRoute, '/route2', true)
-	  , async.apply(testRoute, '/route3', true)
-	  , async.apply(testRoute, '/route4', false)
+	  , async.apply(testRoute, '/route1', { normalHandler: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, caca: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, caca: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
