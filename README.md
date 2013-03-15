@@ -18,12 +18,12 @@ var express = require('express')
 
 groupHandlers.setup(app);
 
-app.get('/route1', normalHandler1)
-app.get('/route2', normalHandler2)
+app.get('/route1', finalHandler1)
+app.get('/route2', finalHandler2)
 
 app.beforeEach(groupHandler, function (app) {
-  app.get('/route3', normalHandler3) // GET /route3 will execute groupHandler, then normalHandler3
-  app.post('/route4', normalHandler4) // POST /route4 will execute groupHandler, then normalHandler4
+  app.get('/route3', finalHandler3) // GET /route3 will execute groupHandler, then finalHandler3
+  app.post('/route4', finalHandler4) // POST /route4 will execute groupHandler, then finalHandler4
   // Note that the syntax is the same than for /route1 and /route2
 });
 
@@ -37,12 +37,23 @@ The `groupHandlers.setup` function augments your Express app with two functions,
 // You can use arrays of middlewares too
 app.beforeEach(gh1, gh2, [gh3, gh4], ..., function (app) {
   // Your routes here
-})
+});
 
 // Alternate syntax if you don't want to augment your Express app
 // Just don't call groupHandlers.setup and use the functions directly like this
 groupHandlers.beforeEach(app, groupHandler, function (app) {
   // Your routes here
+});
+
+// Yodawg, I put a beforeEach inside your beforeEach ...
+app.beforeEach(gh1, function (app) {
+  app.get('/route1', finalHandler1) // Executes gh1, then finalHandler1
+  app.get('/route2', finalHandler2) // Executes gh2, then finalHandler2
+  
+  app.beforeEach(gh2, function (app) {
+    app.get('/route3', finalHandler3) // gh1, gh2 then finalHandler3
+    app.get('/route4', finalHandler4) // gh1, gh2 then finalHandler4
+  });
 });
 ```
 
