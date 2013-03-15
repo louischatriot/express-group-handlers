@@ -24,7 +24,6 @@
   "scripts": {
     "test": "make test"
   },
-  "main": "server",
-  "licence": "fucking proprietary license"
+  "main": "index",
+  "licence": "MIT"
 }
-
