@@ -1,9 +1,12 @@
-var supportedHttpMethods = require('methods');   // Same module Express uses
+var supportedHttpMethods = require('methods')   // Same module Express uses
+  , beforeEach, afterEach
+  ;
 
 
 /**
  * Flatten the given `arr`
  * Taken from Express
+ * @api private
  */
 function flatten (arr, ret){
   var len = arr.length
@@ -21,34 +24,70 @@ function flatten (arr, ret){
 
 
 /**
+ * Returns a METHOD (GET, POST ...) handler that applies 'handlers' before its own handlers are called
+ * @api private
+ */
+function applyExtraHandlersBefore (expressApp, method, handlers) {
+  return function (path) {
+    expressApp[method].call(expressApp, path, handlers, [].slice.call(arguments, 1));
+  };
+}
+
+/**
+ * Returns a METHOD (GET, POST ...) handler that applies 'handlers' after its own handlers are called
+ * @api private
+ */
+function applyExtraHandlersAfter (expressApp, method, handlers) {
+  return function (path) {
+    expressApp[method].call(expressApp, path, [].slice.call(arguments, 1), handlers);
+  };
+}
+
+/**
+ * Creates beforeEach and afterEach depending on the given modifier
+ * (all-purpose, could of course use other modifiers, make your imagination go wild!)
+ * @api private
+ */
+function useFakeExpressAll (modifier) {
+  return function () {
+    var expressApp = arguments[0]
+      , callback = arguments[arguments.length - 1]
+      , handlers = flatten([].slice.call(arguments, 1, arguments.length - 1)) || []
+      , fakeExpressApp = {}
+      , methodsToFake = supportedHttpMethods
+      ;
+
+    if (!expressApp) { return; }
+
+    methodsToFake.push('all');
+    methodsToFake.forEach(function (method) {
+      fakeExpressApp[method] = modifier(expressApp, method, handlers);
+    });
+
+    // Will not be set if setup hasn't be called
+    fakeExpressApp.beforeEach = expressApp.beforeEach;
+    fakeExpressApp.afterEach = expressApp.afterEach;
+
+    callback(fakeExpressApp);
+  }
+}
+
+
+/**
  * Call middleware before every every route handler in this groupe. Use like this:
  * beforeEach(expressApp, middleware[, middleware2, ...], function(app) {
  *   app.get('/route1', handler1);
  *   app.post('/route2', handler2);
  * });
  */
-function beforeEach () {
-  var expressApp = arguments[0]
-    , callback = arguments[arguments.length - 1]
-    , beforeHandlers = flatten([].slice.call(arguments, 1, arguments.length - 1)) || []
-    , fakeExpressApp = {}
-    , methodsToFake = supportedHttpMethods
-    ;
-
-  if (!expressApp) { return; }
-
-  methodsToFake.push('all');
-  methodsToFake.forEach(function (method) {
-    fakeExpressApp[method] = function(path) {
-      expressApp[method].call(expressApp, path, beforeHandlers, [].slice.call(arguments, 1));
-    };
-  });
-
-  fakeExpressApp.beforeEach = expressApp.beforeEach;
-
-  callback(fakeExpressApp);
-}
+beforeEach = useFakeExpressAll(applyExtraHandlersBefore);
 module.exports.beforeEach = beforeEach;
+
+/**
+ * Same as above but the middlewares are called after the route handlers
+ */
+afterEach = useFakeExpressAll(applyExtraHandlersAfter);
+module.exports.afterEach = afterEach;
 
 
 /**
@@ -59,6 +98,12 @@ module.exports.setup = function (expressApp) {
     var newArgs = [this], i;
     for (i = 0; i < arguments.length; i += 1) { newArgs.push(arguments[i]); }
     beforeEach.apply(null, newArgs);
+  };
+
+  expressApp.afterEach = function () {
+    var newArgs = [this], i;
+    for (i = 0; i < arguments.length; i += 1) { newArgs.push(arguments[i]); }
+    afterEach.apply(null, newArgs);
   };
 }
 
