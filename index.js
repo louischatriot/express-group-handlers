@@ -32,11 +32,13 @@ function beforeEach () {
     , callback = arguments[arguments.length - 1]
     , beforeHandlers = flatten([].slice.call(arguments, 1, arguments.length - 1)) || []
     , fakeExpressApp = {}
+    , methodsToFake = supportedHttpMethods
     ;
 
   if (!expressApp) { return; }
 
-  supportedHttpMethods.forEach(function (method) {
+  methodsToFake.push('all');
+  methodsToFake.forEach(function (method) {
     fakeExpressApp[method] = function(path) {
       expressApp[method].call(expressApp, path, beforeHandlers, [].slice.call(arguments, 1));
     };

@@ -63,6 +63,10 @@ function testRoute (route, targetApplied, cb) {
 	});
 }
 
+
+/**
+ * Begin tests
+ */
 describe('beforeEach', function () {
 
 	it('Applies a middleware to a group of routes', function (done) {
@@ -185,6 +189,29 @@ describe('beforeEach', function () {
 	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
 		//, async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, anothertest: true })
 		//, async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, anothertest: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
+
+	it('Works with the all convenience method', function (done) {
+		var app = express();
+
+		app.all('/route1', normalHandler);
+
+		// toApply will be applied both to /route2 and /route3, before normalHandler is called
+		beforeEach(app, apply('onetest'), function (app) {
+			app.all('/route2', normalHandler);
+			app.all('/route3', normalHandler);
+		});
+
+		app.all('/route4', normalHandler);
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', { normalHandler: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
