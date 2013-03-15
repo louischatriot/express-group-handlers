@@ -38,19 +38,22 @@ function stopServer (cb) {
   });
 }
 
-
-// Will send { applied: false } unless middleware toApply has been called before
+// Finish a request
 function normalHandler (req, res, next) {
-	var applied = req.applied || {};
-	applied.normalHandler = true;
+	var applied = req.applied || true;
+	applied = { normalHandler: applied };
 	return res.json(200, applied);
 }
 
-// Returns a middleware that adds property to the req.applied object
+// Return a middleware that transforms the current req.applied into
+// { prop: applied } where prop can be any string
+// This way we can test the handlers execute in the right order,
+// the rightmost variables correspond to the handlers applied first
 function apply(prop) {
 	return function (req, res, next) {
-		req.applied = req.applied || {};
-		req.applied[prop] = true;
+		var _applied = req.applied || true;
+		req.applied = {};
+		req.applied[prop] = _applied;
 		return next();
 	}
 }
@@ -85,9 +88,9 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true })
-	  , async.apply(testRoute, '/route4', { normalHandler: true })
+		, async.apply(testRoute, '/route2', { normalHandler: { onetest: true } })
+		, async.apply(testRoute, '/route3', { normalHandler: { onetest: true } })
+		, async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
@@ -107,8 +110,8 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true, one: true, two: true, three: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, inarray: true })
+		, async.apply(testRoute, '/route2', { normalHandler: { three: { two: { one: { onetest: true } } } } })
+		, async.apply(testRoute, '/route3', { normalHandler: { inarray: { onetest: true } } })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
@@ -130,10 +133,10 @@ describe('beforeEach', function () {
 
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
-	  , async.apply(testRoute, '/route1', { normalHandler: true, onetest: true, twotest: true, threetest: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true, twotest: true, threetest: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, twotest: true, threetest: true })
-	  , async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, twotest: true, threetest: true })
+	  , async.apply(testRoute, '/route1', { normalHandler: { threetest: { twotest: { onetest: true } } } })
+	  , async.apply(testRoute, '/route2', { normalHandler: { threetest: { twotest: { onetest: true } } } })
+	  , async.apply(testRoute, '/route3', { normalHandler: { threetest: { twotest: { onetest: true } } } })
+	  , async.apply(testRoute, '/route4', { normalHandler: { threetest: { twotest: { onetest: true } } } })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
@@ -156,9 +159,9 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, anothertest: true })
-	  , async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, anothertest: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: { onetest: true } })
+	  , async.apply(testRoute, '/route3', { normalHandler: { anothertest: { onetest: true } } })
+	  , async.apply(testRoute, '/route4', { normalHandler: { anothertest: { onetest: true } } })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
@@ -183,9 +186,9 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
-		//, async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, anothertest: true })
-		//, async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, anothertest: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: { onetest: true } })
+		, async.apply(testRoute, '/route3', { normalHandler: { anothertest: { onetest: true } } })
+		, async.apply(testRoute, '/route4', { normalHandler: { anothertest: { onetest: true } } })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
@@ -205,8 +208,8 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: { onetest: true } })
+	  , async.apply(testRoute, '/route3', { normalHandler: { onetest: true } })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
@@ -237,8 +240,8 @@ describe('afterEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-		, async.apply(testRoute, '/route2', { normalHandler: true, thatsbefore: true })
-		, async.apply(testRoute, '/route3', { normalHandler: true, thattoo: true, thistoo: true })
+		, async.apply(testRoute, '/route2', { normalHandler: { thatsbefore: true } })
+		, async.apply(testRoute, '/route3', { normalHandler: { thistoo: { thattoo: true } } })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
@@ -256,8 +259,8 @@ describe('afterEach', function () {
 
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
-		, async.apply(testRoute, '/route1', { normalHandler: true, thatsbefore: true, beforeallthis: true })
-		, async.apply(testRoute, '/route2', { normalHandler: true, thattoo: true, beforeallthis: true })
+		, async.apply(testRoute, '/route1', { normalHandler: { thatsbefore: { beforeallthis: true } } })
+		, async.apply(testRoute, '/route2', { normalHandler: { thattoo: { beforeallthis: true } } })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
