@@ -7,6 +7,7 @@ var should = require('chai').should()
 	, _ = require('underscore')
 	, groupHandlers = require('../index')
 	, beforeEach = groupHandlers.beforeEach
+	, afterEach = groupHandlers.afterEach
 	, testPort = 3000   // Change this if you already have something running on this port and absolutely want to test this module
   ;
 
@@ -211,6 +212,34 @@ describe('beforeEach', function () {
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
 	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
 	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
+
+});
+
+
+describe('afterEach', function () {
+
+	it('Applies a middleware after a group of routes', function (done) {
+		var app = express();
+
+		app.get('/route1', normalHandler);
+
+		// toApply will be applied both to /route2 and /route3, before normalHandler is called
+		afterEach(app, normalHandler, function (app) {
+			app.get('/route2', apply('thatsbefore'));
+			app.get('/route3', apply('thattoo'));
+		});
+
+		app.get('/route4', normalHandler);
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', { normalHandler: true })
+		, async.apply(testRoute, '/route2', { normalHandler: true, thatsbefore: true })
+		, async.apply(testRoute, '/route3', { normalHandler: true, thattoo: true })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
