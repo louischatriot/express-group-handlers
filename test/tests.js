@@ -45,10 +45,13 @@ function normalHandler (req, res, next) {
 	return res.json(200, applied);
 }
 
-function toApply (req, res, next) {
-	req.applied = req.applied || {};
-	req.applied.caca = true;
-	return next();
+// Returns a middleware that adds property to the req.applied object
+function apply(prop) {
+	return function (req, res, next) {
+		req.applied = req.applied || {};
+		req.applied[prop] = true;
+		return next();
+	}
 }
 
 // Test a route to see if toApply has been applied or not
@@ -68,7 +71,7 @@ describe('beforeEach', function () {
 		app.get('/route1', normalHandler);
 
 		// toApply will be applied both to /route2 and /route3, before normalHandler is called
-		beforeEach(app, toApply, function (app) {
+		beforeEach(app, apply('onetest'), function (app) {
 			app.get('/route2', normalHandler);
 			app.get('/route3', normalHandler);
 		});
@@ -78,13 +81,35 @@ describe('beforeEach', function () {
 		async.waterfall([
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
-	  , async.apply(testRoute, '/route2', { normalHandler: true, caca: true })
-	  , async.apply(testRoute, '/route3', { normalHandler: true, caca: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
 
+	it('Also works if you mix up handlers and arrays of handlers in the route definition, as in Express', function (done) {
+		var app = express();
+
+		app.get('/route1', normalHandler);
+
+		// toApply will be applied both to /route2 and /route3, before normalHandler is called
+		beforeEach(app, apply('onetest'), function (app) {
+			app.get('/route2', apply('one'), [apply('two'), apply('three')], normalHandler);
+			app.get('/route3', [apply('inarray'), normalHandler]);
+		});
+
+		app.get('/route4', normalHandler);
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', { normalHandler: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true, one: true, two: true, three: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, inarray: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
 
 });
 
