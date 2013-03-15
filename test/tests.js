@@ -135,6 +135,31 @@ describe('beforeEach', function () {
 		], done);
 	});
 
+	it('Can nest multiple beforeEach', function (done) {
+		var app = express();
+
+		app.get('/route1', normalHandler);
+
+		// toApply will be applied both to /route2 and /route3, before normalHandler is called
+		beforeEach(app, apply('onetest'), function (app) {
+			app.get('/route2', normalHandler);
+
+			beforeEach(app, apply('anothertest'), function (app) {
+				app.get('/route3', normalHandler);
+				app.get('/route4', normalHandler);
+			});
+		});
+
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', { normalHandler: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, anothertest: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, anothertest: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
 
 });
 
