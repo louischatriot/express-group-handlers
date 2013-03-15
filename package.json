@@ -20,6 +20,7 @@
   , "chai": "1.0.x"
   , "mocha": "1.4.x"
   , "sinon": "1.3.x"
+  , "async": "~0.2.5"
   },
   "scripts": {
     "test": "make test"
