@@ -7,7 +7,7 @@ Apply a middleware before or after a group of route handlers in Express. No need
 The usual:
 ```bash
 npm install express-group-handlers
-npm test
+npm test   # Be sure to install the dev dependencies if you want to test this module!
 ```
 
 ## Use
