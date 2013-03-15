@@ -1,0 +1,30 @@
+{
+  "name": "express-group-handlers",
+  "version": "0.1.0",
+  "author": "Louis Chatriot",
+  "contributors": [
+    "Louis Chatriot"
+  ],
+  "description": "Apply a middleware only to a group of route handlers in Express",
+  "keywords": [
+    "Express"
+  , "handlers"
+  , "group"
+  , "middleware"
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+    "express": "3.0.0rc5"
+  , "request": "2.9.x"
+  , "chai": "1.0.x"
+  , "mocha": "1.4.x"
+  , "sinon": "1.3.x"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "main": "server",
+  "licence": "fucking proprietary license"
+}
+
