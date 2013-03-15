@@ -6,6 +6,7 @@ var should = require('chai').should()
 	, request = require('request')
 	, groupHandlers = require('../index')
 	, beforeEach = groupHandlers.beforeEach
+	, testPort = 3000   // Change this if you already have something running on this port and absolutely want to test this module
   ;
 
 // Will send { applied: false } unless middleware toApply has been called before
@@ -16,6 +17,15 @@ function normalHandler (req, res, next) {
 function toApply (req, res, next) {
 	req.applied = true;
 	return next();
+}
+
+// Test a route to see if toApply has been applied or not
+function testRoute (route, shouldBeApplied, cb) {
+	request.get({ uri: 'http://localhost:' + testPort + route }, function (err, res, body) {
+		var obj = JSON.parse(body);
+		obj.applied.should.equal(shouldBeApplied);
+		cb();
+	});
 }
 
 // Launch an Express server in a way that lets us close it cleanly
@@ -51,42 +61,21 @@ describe('beforeEach', function () {
 	it('Applies a middleware to a group of routes', function (done) {
 		var app = express();
 
-		app.get('/', function(req, res){
-			res.send('hello world');
-		});
+		app.get('/route1', normalHandler);
+		app.get('/route2', normalHandler);
+		app.get('/route3', normalHandler);
+		app.get('/route4', normalHandler);
 
-		launchServer.call(app, 3000, function () {
-			request.get({ uri: 'http://localhost:3000/' }, function (err, res, body) {
-				console.log(body);
-
-				stopServer.call(app, function () {
-
-					console.log("launched");
-					done();
-				});
-			});
-		});
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', false)
+	  , async.apply(testRoute, '/route2', false)
+	  , async.apply(testRoute, '/route3', false)
+	  , async.apply(testRoute, '/route4', false)
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
 	});
 
-	it('Applies a middleware to a group of routes', function (done) {
-		var app = express();
-
-		app.get('/', function(req, res){
-			res.send('hello world');
-		});
-
-		launchServer.call(app, 3000, function () {
-			request.get({ uri: 'http://localhost:3000/' }, function (err, res, body) {
-				console.log(body);
-
-				stopServer.call(app, function () {
-
-					console.log("launched");
-					done();
-				});
-			});
-		});
-	});
 
 });
 
