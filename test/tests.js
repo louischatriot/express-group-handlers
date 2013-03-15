@@ -75,7 +75,6 @@ describe('beforeEach', function () {
 
 		app.get('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		beforeEach(app, apply('onetest'), function (app) {
 			app.get('/route2', normalHandler);
 			app.get('/route3', normalHandler);
@@ -98,7 +97,6 @@ describe('beforeEach', function () {
 
 		app.get('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		beforeEach(app, apply('onetest'), function (app) {
 			app.get('/route2', apply('one'), [apply('two'), apply('three')], normalHandler);
 			app.get('/route3', [apply('inarray'), normalHandler]);
@@ -145,7 +143,6 @@ describe('beforeEach', function () {
 
 		app.get('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		beforeEach(app, apply('onetest'), function (app) {
 			app.get('/route2', normalHandler);
 
@@ -173,7 +170,6 @@ describe('beforeEach', function () {
 
 		app.get('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		app.beforeEach(apply('onetest'), function (app) {
 			app.get('/route2', normalHandler);
 
@@ -199,7 +195,6 @@ describe('beforeEach', function () {
 
 		app.all('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		beforeEach(app, apply('onetest'), function (app) {
 			app.all('/route2', normalHandler);
 			app.all('/route3', normalHandler);
@@ -220,6 +215,7 @@ describe('beforeEach', function () {
 });
 
 
+// The same function is used underneath beforeEach and afterEach so a simple test is enough to ensure correctness
 describe('afterEach', function () {
 
 	it('Applies a middleware after a group of routes', function (done) {
@@ -227,10 +223,13 @@ describe('afterEach', function () {
 
 		app.get('/route1', normalHandler);
 
-		// toApply will be applied both to /route2 and /route3, before normalHandler is called
 		afterEach(app, normalHandler, function (app) {
 			app.get('/route2', apply('thatsbefore'));
-			app.get('/route3', apply('thattoo'));
+
+			// The more you nested afterEach are executed before, which mirrors the behaviour of beforeEach
+			afterEach(app, apply('thistoo'), function (app) {
+				app.get('/route3', apply('thattoo'));
+			});
 		});
 
 		app.get('/route4', normalHandler);
@@ -239,8 +238,26 @@ describe('afterEach', function () {
 			function (cb) { launchServer.call(app, testPort, cb); }
 	  , async.apply(testRoute, '/route1', { normalHandler: true })
 		, async.apply(testRoute, '/route2', { normalHandler: true, thatsbefore: true })
-		, async.apply(testRoute, '/route3', { normalHandler: true, thattoo: true })
+		, async.apply(testRoute, '/route3', { normalHandler: true, thattoo: true, thistoo: true })
 	  , async.apply(testRoute, '/route4', { normalHandler: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
+
+	it('Can nest afterEach and beforeEach', function (done) {
+		var app = express();
+
+		beforeEach(app, apply('beforeallthis'), function (app) {
+			afterEach(app, normalHandler, function (app) {
+				app.get('/route1', apply('thatsbefore'));
+				app.get('/route2', apply('thattoo'));
+			});
+		});
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+		, async.apply(testRoute, '/route1', { normalHandler: true, thatsbefore: true, beforeallthis: true })
+		, async.apply(testRoute, '/route2', { normalHandler: true, thattoo: true, beforeallthis: true })
 	  , function (cb) { stopServer.call(app, cb); }
 		], done);
 	});
