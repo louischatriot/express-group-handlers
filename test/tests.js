@@ -111,5 +111,30 @@ describe('beforeEach', function () {
 		], done);
 	});
 
+	it('Can apply multiple middlewares or arrays of middlewares before the normal route handlers', function (done) {
+		var app = express();
+
+		beforeEach(app, apply('onetest'), apply('twotest'), apply('threetest'), function (app) {
+			app.get('/route1', normalHandler);
+			app.get('/route2', normalHandler);
+		});
+
+		// Works with arrays too
+		beforeEach(app, [apply('onetest'), apply('twotest')], apply('threetest'), function (app) {
+			app.get('/route3', normalHandler);
+			app.get('/route4', normalHandler);
+		});
+
+		async.waterfall([
+			function (cb) { launchServer.call(app, testPort, cb); }
+	  , async.apply(testRoute, '/route1', { normalHandler: true, onetest: true, twotest: true, threetest: true })
+	  , async.apply(testRoute, '/route2', { normalHandler: true, onetest: true, twotest: true, threetest: true })
+	  , async.apply(testRoute, '/route3', { normalHandler: true, onetest: true, twotest: true, threetest: true })
+	  , async.apply(testRoute, '/route4', { normalHandler: true, onetest: true, twotest: true, threetest: true })
+	  , function (cb) { stopServer.call(app, cb); }
+		], done);
+	});
+
+
 });
 

@@ -22,7 +22,7 @@ function flatten (arr, ret){
 
 /**
  * Call middleware before every every route handler in this groupe. Use like this:
- * beforeEach(expressApp, middleware, function(app) {
+ * beforeEach(expressApp, middleware[, middleware2, ...], function(app) {
  *   app.get('/route1', handler1);
  *   app.post('/route2', handler2);
  * });
