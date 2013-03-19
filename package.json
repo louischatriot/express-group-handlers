@@ -1,6 +1,7 @@
 {
   "name": "express-group-handlers",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "homepage": "https://github.com/tldrio/express-group-handlers",
   "author": "Louis Chatriot",
   "contributors": [
     "Louis Chatriot"
