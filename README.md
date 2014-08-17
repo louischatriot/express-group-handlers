@@ -1,6 +1,8 @@
 Express Group Handlers
 ======================
 
+**IMPORTANT: this library is not maintained anymore, please don't submit anymore pull requests except for bugfixes**
+
 Apply a middleware before or after a group of route handlers in Express. No need to change your existing code, just call this function (see demos below).
 
 ## Install and test
